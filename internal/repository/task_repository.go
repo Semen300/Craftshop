@@ -111,7 +111,7 @@ func (t TaskRepository) GetAllTasks() ([]model.Task, error) {
 func (t TaskRepository) GetTasksByContracts(contractIDs []int) ([]model.Task, error) {
 	query := `SELECT *
 	FROM tasks
-	WHERE contractID IN $1`
+	WHERE contractID IN `
 
 	var contractIDString strings.Builder
 	contractIDString.WriteString("(")
@@ -121,7 +121,7 @@ func (t TaskRepository) GetTasksByContracts(contractIDs []int) ([]model.Task, er
 	}
 	contractIDString.WriteString(strconv.Itoa(contractIDs[len(contractIDs)-1]) + ")")
 
-	rows, queryErr := t.Conn.Query(query, contractIDString.String())
+	rows, queryErr := t.Conn.Query(query + contractIDString.String())
 	if queryErr != nil {
 		return nil,
 			fmt.Errorf("Error executing query \"%s\" to table \"tasks\":\n %w", query, queryErr)

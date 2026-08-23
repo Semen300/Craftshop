@@ -96,7 +96,7 @@ func (cs CustomerService) GetOrderById(login string, role int, orderId int) (mod
 	if orderRepoErr != nil {
 		return model.Order{}, fmt.Errorf("Error getting order by order ID: \n%w", orderRepoErr)
 	}
-	if order.WorkerLogin != login {
+	if order.CustomerLogin != login {
 		return model.Order{},
 			errors.AccessRejectedError{}
 	}

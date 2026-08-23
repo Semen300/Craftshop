@@ -91,7 +91,6 @@ func main() {
 	customerGroup.GET("/basket", customerHandler.GetBasket)
 	customerGroup.POST("/basket", customerHandler.SaveToBasket)
 	customerGroup.DELETE("/basket/:id", customerHandler.DeleteFromBasket)
-	customerGroup.POST("", authHandler.Register)
 
 	workerGroup.GET("/orders", workerHandler.GetOrdersByWorker)
 	workerGroup.GET("/orders/:id", workerHandler.GetOrder)
@@ -102,6 +101,7 @@ func main() {
 	managerGroup.GET("/orders/:id", managerHandler.GetOrderByID)
 	managerGroup.GET("/workers", managerHandler.GetAllWorkers)
 
+	authGroup.POST("/newCustomer", authHandler.Register)
 	authGroup.POST("/login", authHandler.Login)
 	authGroup.POST("/refresh", authHandler.RefreshToken)
 	authGroup.POST("/logout", authHandler.Logout)
