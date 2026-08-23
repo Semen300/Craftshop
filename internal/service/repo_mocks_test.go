@@ -112,7 +112,7 @@ func (m *taskRepoMock) GetAllTasks() ([]model.Task, error) {
 	return args.Get(0).([]model.Task), args.Error(1)
 }
 
-func (m *taskRepoMock) GetTasksByContract(contractID int) ([]model.Task, error) {
+func (m *taskRepoMock) GetTasksByContracts(contractID []int) ([]model.Task, error) {
 	args := m.Called(contractID)
 	return args.Get(0).([]model.Task), args.Error(1)
 }
@@ -155,6 +155,11 @@ func (m *userRepoMock) GetWorkersByManager(managerLogin string) ([]model.Worker,
 func (m *userRepoMock) GetRoleByLogin(login string) (int, string, error) {
 	args := m.Called(login)
 	return args.Int(0), args.String(1), args.Error(2)
+}
+
+func (m *userRepoMock) GetWorker(workerLogin string) (model.Worker, error) {
+	args := m.Called(workerLogin)
+	return args.Get(0).(model.Worker), args.Error(1)
 }
 
 func (m *userRepoMock) SaveCustomer(customer model.Customer) error {

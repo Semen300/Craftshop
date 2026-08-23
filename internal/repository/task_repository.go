@@ -5,11 +5,13 @@ import (
 	"crud-go/internal/model"
 	"database/sql"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 type ITaskRepository interface {
 	GetAllTasks() ([]model.Task, error)
-	GetTasksByContract(int) ([]model.Task, error)
+	GetTasksByContracts([]int) ([]model.Task, error)
 	GetTaskById(int) (model.Task, error)
 	SaveTask(model.Task) (int, error)
 	DeleteTask(int) error
@@ -102,16 +104,24 @@ func (t TaskRepository) GetAllTasks() ([]model.Task, error) {
 	return tasks, nil
 }
 
-// GetTasksByContract служит для получения всех задач, составляющих заказ.
+// GetTasksByContract служит для получения задач, составляющих переданные заказы.
 //
-// Принимает ID заказа, для которого нужно получить задачи,
+// Принимает список ID заказов, для которого нужно получить задачи,
 // возвращает список задач и возможную ошибку.
-func (t TaskRepository) GetTasksByContract(contractID int) ([]model.Task, error) {
+func (t TaskRepository) GetTasksByContracts(contractIDs []int) ([]model.Task, error) {
 	query := `SELECT *
 	FROM tasks
-	WHERE contractID = $1`
+	WHERE contractID IN $1`
 
-	rows, queryErr := t.Conn.Query(query, contractID)
+	var contractIDString strings.Builder
+	contractIDString.WriteString("(")
+
+	for i := 0; i < len(contractIDs)-1; i++ {
+		contractIDString.WriteString(strconv.Itoa(contractIDs[i]) + ",")
+	}
+	contractIDString.WriteString(strconv.Itoa(contractIDs[len(contractIDs)-1]) + ")")
+
+	rows, queryErr := t.Conn.Query(query, contractIDString.String())
 	if queryErr != nil {
 		return nil,
 			fmt.Errorf("Error executing query \"%s\" to table \"tasks\":\n %w", query, queryErr)

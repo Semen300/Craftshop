@@ -16,6 +16,11 @@ type TokenRepository struct {
 	Conn *sql.DB
 }
 
+// NewTokenRepository создаёт новый репозиторий для доступа к функционалу токенов.
+// Также проводит инициализацию таблицы "tokens".
+//
+// Принимает указатель на подключение к базе данных,
+// возвращает новый экземпляр репозитория и возможную ошибку.
 func NewTokenRepository(db *sql.DB) (TokenRepository, error) {
 	query := `CREATE TABLE IF NOT EXISTS tokens (
 	token_id UUID PRIMARY KEY,
@@ -33,6 +38,10 @@ func NewTokenRepository(db *sql.DB) (TokenRepository, error) {
 	return TokenRepository{Conn: db}, nil
 }
 
+// Save служит для сохранения токена в базе данных.
+//
+// Принимает ID токена, логин пользователя, хеш токена и время истечения его действия,
+// возвращает возможную ошибку.
 func (tr TokenRepository) Save(tokenID, login, tokenHash string, expiresAt time.Time) error {
 	query := `INSERT INTO tokens (token_id, login, token_hash, expires_at)
 	VALUES ($1, $2, $3, $4)`
@@ -41,6 +50,10 @@ func (tr TokenRepository) Save(tokenID, login, tokenHash string, expiresAt time.
 	return queryErr
 }
 
+// GetTokenByLogin служит для получения действующего токена пользователя по его логину.
+//
+// Принимает логин пользователя,
+// возвращает токен и возможную ошибку.
 func (tr TokenRepository) GetTokenByLogin(login string) (model.RefreshToken, error) {
 	query := `SELECT * 
 	FROM tokens
@@ -67,6 +80,10 @@ func (tr TokenRepository) GetTokenByLogin(login string) (model.RefreshToken, err
 	return token, nil
 }
 
+// Revoke служит для отзыва всех токенов пользователя.
+//
+// Принимает логин пользователя,
+// возвращает возможную ошибку.
 func (tr TokenRepository) Revoke(login string) error {
 	query := `UPDATE tokens
 	SET revoked = true

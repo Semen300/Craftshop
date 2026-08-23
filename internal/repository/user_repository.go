@@ -7,12 +7,13 @@ import (
 )
 
 type IUserRepository interface {
-	GetWorkersByManager(string) ([]model.Worker, error)
-	GetRoleByLogin(string) (int, string, error)
-	SaveCustomer(model.Customer) error
+	GetWorkersByManager(managerLogin string) (workerInfo []model.Worker, e error)
+	GetRoleByLogin(userLogin string) (role int, hashedPass string, e error)
+	GetWorker(workerLogin string) (workerInfo model.Worker, e error)
+	SaveCustomer(customerToSave model.Customer) error
 }
 
-// UserRepository предназначен для выполнения операций, требующих доступа к БД, хранящих.
+// UserRepository предназначен для выполнения операций, требующих доступа к БД, хранящей данные о пользователях.
 type UserRepository struct {
 	Conn *sql.DB
 }
@@ -51,13 +52,13 @@ func NewUserRepository(db *sql.DB) (UserRepository, error) {
 	_, workerErr := db.Exec(workerQuery)
 	if workerErr != nil {
 		return UserRepository{},
-			fmt.Errorf("Error creating table \"managers\":\n %w", workerErr)
+			fmt.Errorf("Error creating table \"workers\":\n %w", workerErr)
 	}
 
 	_, customerErr := db.Exec(customerQuery)
 	if customerErr != nil {
 		return UserRepository{},
-			fmt.Errorf("Error creating table \"managers\":\n %w", customerErr)
+			fmt.Errorf("Error creating table \"customers\":\n %w", customerErr)
 	}
 
 	return UserRepository{db}, nil
@@ -144,6 +145,23 @@ func (u UserRepository) GetRoleByLogin(login string) (int, string, error) {
 	}
 
 	return role, password, nil
+}
+
+// GetWorker служит для получения информации о работнике.
+//
+// Принимает логин рабочего, о котором нужно получить информацию,
+// возвращает информацию о рабочем и возможную ошибку
+func (u UserRepository) GetWorker(workerLogin string) (model.Worker, error) {
+	query := `SELECT * 
+	FROM workers
+	WHERE id = $1`
+
+	var worker model.Worker
+	queryErr := u.Conn.QueryRow(query, workerLogin).Scan(&worker.Login, &worker.Password, &worker.Fio, &worker.SuperiorLogin)
+	if queryErr != nil {
+		return model.Worker{}, queryErr
+	}
+	return worker, nil
 }
 
 // SaveCustomer служит для идемпотентного сохранения покупателя.

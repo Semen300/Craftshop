@@ -2,6 +2,7 @@ package service
 
 import (
 	"crud-go/internal/model"
+	"crud-go/internal/model/errors"
 	"crud-go/internal/repository"
 	"fmt"
 )
@@ -12,15 +13,24 @@ type IWorkerService interface {
 	SetTaskCompleted(string, int, int) error
 }
 
+// WorkerService предназначен для выполнения операций, требующихся для корректной работы функционала работника.
 type WorkerService struct {
 	OrderRepository *repository.IOrderRepository
 	TaskRepository  *repository.ITaskRepository
 }
 
+// NewWorkerService создаёт новый сервис для выполнения операций работника.
+//
+// Принимает интерфейсы репозиториев для хранения заказов и задач,
+// возвращает новый экземпляр сервиса.
 func NewWorkerService(or repository.IOrderRepository, tr repository.ITaskRepository) WorkerService {
 	return WorkerService{OrderRepository: &or, TaskRepository: &tr}
 }
 
+// GetAllOrders служит для получения всех заказов, назначенных данному рабочему.
+//
+// Принимает логин и роль рабочего,
+// возвращает список заказов, назначенных данному рабочему и возможную ошибку.
 func (ws WorkerService) GetAllOrders(login string, role int) ([]model.Order, error) {
 	if role != 2 {
 		return nil,
@@ -65,20 +75,28 @@ func (ws WorkerService) GetAllOrders(login string, role int) ([]model.Order, err
 	return orders, nil
 }
 
-func (ws WorkerService) GetOrderById(login string, role int, id int) (model.Order, error) {
+// GetOrderById служит для получения заказа по его идентификатору.
+//
+// Принимает логин рабочего, его роль и идентификатор заказа,
+// возвращает информацию о заказе и возможную ошибку.
+func (ws WorkerService) GetOrderById(login string, role int, orderId int) (model.Order, error) {
 	if role != 2 {
 		return model.Order{}, fmt.Errorf("You are not authorized for this operation")
 	}
 	or := *ws.OrderRepository
 	tr := *ws.TaskRepository
 
-	order, ordersErr := or.GetOrderById(id)
+	order, ordersErr := or.GetOrderById(orderId)
 	if ordersErr != nil {
 		return model.Order{},
 			fmt.Errorf("Error getting orders by Worker: \n%w", ordersErr)
 	}
+	if order.WorkerLogin != login {
+		return model.Order{},
+			errors.AccessRejectedError{}
+	}
 
-	tasks, tasksErr := tr.GetTasksByContract(id)
+	tasks, tasksErr := tr.GetTasksByContracts([]int{orderId})
 	if tasksErr != nil {
 		return model.Order{},
 			fmt.Errorf("Error getting tasks by Worker:\n%w", tasksErr)
@@ -101,14 +119,18 @@ func (ws WorkerService) GetOrderById(login string, role int, id int) (model.Orde
 	return order, nil
 }
 
-func (ws WorkerService) SetTaskCompleted(login string, role int, id int) error {
+// SetTaskCompleted служит для пометки о выполнении назначенной работнику задачи.
+//
+// Принимает логин рабочего, его роль и идентификатор задачи,
+// возвращает возможную ошибку.
+func (ws WorkerService) SetTaskCompleted(login string, role int, taskId int) error {
 	if role != 2 {
 		return fmt.Errorf("You are not authorized for this operation")
 	}
 	or := *ws.OrderRepository
 	tr := *ws.TaskRepository
 
-	task, taskErr := tr.GetTaskById(id)
+	task, taskErr := tr.GetTaskById(taskId)
 	if taskErr != nil {
 		return fmt.Errorf("Error getting task: \n%w", taskErr)
 	}
@@ -117,8 +139,11 @@ func (ws WorkerService) SetTaskCompleted(login string, role int, id int) error {
 	if orderErr != nil {
 		return fmt.Errorf("Error getting order: \n%w", orderErr)
 	}
+	if order.WorkerLogin != login {
+		return errors.AccessRejectedError{}
+	}
 
-	tasks, tasksErr := tr.GetTasksByContract(order.ID)
+	tasks, tasksErr := tr.GetTasksByContracts([]int{order.ID})
 	if tasksErr != nil {
 		return fmt.Errorf("Error getting task: \n%w", tasksErr)
 	}
@@ -128,7 +153,7 @@ func (ws WorkerService) SetTaskCompleted(login string, role int, id int) error {
 	}
 	var taskToChange *model.Task
 	for i, tsk := range tasks {
-		if tsk.ID == id {
+		if tsk.ID == taskId {
 			taskToChange = &tasks[i]
 			break
 		}

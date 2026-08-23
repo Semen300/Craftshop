@@ -27,8 +27,6 @@ type OrderRepository struct {
 //
 // Принимает указатель на подключение к базе данных,
 // возвращает новый экземпляр репозитория и возможную ошибку.
-//
-// TODO: применить паттерн "синглтон" для создания одного экземпляра репозитория
 func NewOrderRepository(db *sql.DB) (OrderRepository, error) {
 	ordersCreationQuery := `CREATE TABLE IF NOT EXISTS orders (
 	id SERIAL PRIMARY KEY,
@@ -69,6 +67,7 @@ func NewOrderRepository(db *sql.DB) (OrderRepository, error) {
 //
 // Не принимает значений,
 // возвращает список всех заказов и возможную ошибку.
+// depricated
 func (c OrderRepository) GetAllOrders() ([]model.Order, error) {
 	orderQuery := `SELECT o.id, o.name, o.deadline, o.managerLogin, o.workerLogin, o.customerLogin, o.status, o.price
 	FROM orders o`

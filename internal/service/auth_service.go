@@ -30,6 +30,11 @@ type AuthService struct {
 	refreshKey      string
 }
 
+// NewAuthService создаёт новый сервис для выполнения операций аутентификации.
+//
+// Принимает интерфейсы репозиториев пользователей и токенов, время жизни токенов
+// и ключи для их подписи,
+// возвращает новый экземпляр сервиса.
 func NewAuthService(ur repository.IUserRepository, tr repository.ITokenRepository, accessLifetime, refreshLifetime int, accessKey, refreshKey string) AuthService {
 	return AuthService{
 		UserRepo:        &ur,
@@ -41,6 +46,10 @@ func NewAuthService(ur repository.IUserRepository, tr repository.ITokenRepositor
 	}
 }
 
+// RegisterNewCustomer служит для регистрации нового покупателя.
+//
+// Принимает логин, пароль, ФИО, номер телефона и адрес электронной почты покупателя,
+// возвращает возможную ошибку.
 func (as AuthService) RegisterNewCustomer(login, password, fio, number, email string) error {
 	ur := *as.UserRepo
 	hashedPass := CreateHash(password)
@@ -52,6 +61,10 @@ func (as AuthService) RegisterNewCustomer(login, password, fio, number, email st
 	return nil
 }
 
+// Login служит для аутентификации пользователя и создания токенов доступа.
+//
+// Принимает логин и пароль пользователя,
+// возвращает данные пользователя, токен доступа, токен обновления и возможную ошибку.
 func (as AuthService) Login(login, password string) (model.Claims, string, string, error) {
 	ur := *as.UserRepo
 	tr := *as.TokenRepo
@@ -105,6 +118,10 @@ func (as AuthService) Login(login, password string) (model.Claims, string, strin
 		nil
 }
 
+// Refresh служит для обновления токена доступа с помощью токена обновления.
+//
+// Принимает строковое представление токена обновления,
+// возвращает новый токен доступа и возможную ошибку.
 func (as AuthService) Refresh(refreshTokenStr string) (string, error) {
 	tr := *as.TokenRepo
 	claims, parseErr := as.ParseRefreshToken(refreshTokenStr)
@@ -123,11 +140,19 @@ func (as AuthService) Refresh(refreshTokenStr string) (string, error) {
 	return as.GenerateAccessToken(claims)
 }
 
+// Logout служит для завершения сессии пользователя.
+//
+// Принимает логин пользователя,
+// возвращает возможную ошибку.
 func (as AuthService) Logout(login string) error {
 	tr := *as.TokenRepo
 	return tr.Revoke(login)
 }
 
+// GenerateAccessToken служит для создания токена доступа.
+//
+// Принимает данные пользователя для включения в токен,
+// возвращает строковое представление токена доступа и возможную ошибку.
 func (as AuthService) GenerateAccessToken(claims model.Claims) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(as.accessLifetime) * time.Second)
 	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
@@ -136,6 +161,10 @@ func (as AuthService) GenerateAccessToken(claims model.Claims) (string, error) {
 	return token.SignedString([]byte(as.accessKey))
 }
 
+// GenerateRefreshToken служит для создания токена обновления.
+//
+// Принимает данные пользователя для включения в токен,
+// возвращает ID токена, его строковое представление, время истечения действия и возможную ошибку.
 func (as AuthService) GenerateRefreshToken(claims model.Claims) (string, string, time.Time, error) {
 	expirationTime := time.Now().Add(time.Duration(as.refreshLifetime) * time.Second)
 	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
@@ -148,6 +177,10 @@ func (as AuthService) GenerateRefreshToken(claims model.Claims) (string, string,
 	return tokenID, tokenStr, expirationTime, tokenErr
 }
 
+// ParseAccessToken служит для проверки и разбора токена доступа.
+//
+// Принимает строковое представление токена доступа,
+// возвращает данные пользователя из токена и возможную ошибку.
 func (as AuthService) ParseAccessToken(tokenStr string) (model.Claims, error) {
 	token, parseErr := jwt.ParseWithClaims(
 		tokenStr,
@@ -175,6 +208,10 @@ func (as AuthService) ParseAccessToken(tokenStr string) (model.Claims, error) {
 	return *claims, nil
 }
 
+// ParseRefreshToken служит для проверки и разбора токена обновления.
+//
+// Принимает строковое представление токена обновления,
+// возвращает данные пользователя из токена и возможную ошибку.
 func (as AuthService) ParseRefreshToken(tokenStr string) (model.Claims, error) {
 	token, parseErr := jwt.ParseWithClaims(
 		tokenStr,

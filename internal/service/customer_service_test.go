@@ -50,11 +50,10 @@ func TestGetOrderByCustomer(t *testing.T) {
 		{ID: 2, Name: "task2", OrderID: 1, ItemID: 2, Amount: 20, Finished: true, Price: 5000},
 		{ID: 3, Name: "task3", OrderID: 2, ItemID: 1, Amount: 10, Finished: false, Price: 5000},
 		{ID: 4, Name: "task4", OrderID: 2, ItemID: 2, Amount: 60, Finished: true, Price: 15000},
-		{ID: 5, Name: "task5", OrderID: 3, ItemID: 2, Amount: 100, Finished: false, Price: 50000},
 	}
 
 	orderRepoMock.On("GetOrdersByCustomer", "customer1").Return(mockOrders, nil)
-	taskRepoMock.On("GetAllTasks").Return(mockTasks, nil)
+	taskRepoMock.On("GetTasksByOrders", []int{1, 2}).Return(mockTasks, nil)
 
 	gotOrders, ordersErr := testService.GetOrdersByCustomer("customer1", 1)
 	if ordersErr != nil {
@@ -135,7 +134,7 @@ func TestGetOrderById(t *testing.T) {
 	}
 
 	orderRepoMock.On("GetOrderById", 1).Return(mockOrder, nil)
-	taskRepoMock.On("GetTasksByContract", 1).Return(mockTasks, nil)
+	taskRepoMock.On("GetTasksByContracts", []int{1}).Return(mockTasks, nil)
 
 	gotOrder, orderErr := testService.GetOrderById("customer1", 1, 1)
 	if orderErr != nil {

@@ -93,7 +93,7 @@ func TestGetTasksByContract(t *testing.T) {
 		t.Fatal(repoErr)
 	}
 	resetTasks(&repo)
-	tasks, getErr := repo.GetTasksByContract(rowNum)
+	tasks, getErr := repo.GetTasksByContracts([]int{rowNum})
 	if getErr != nil {
 		t.Fatal(getErr)
 	}

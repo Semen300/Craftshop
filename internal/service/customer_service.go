@@ -2,6 +2,7 @@ package service
 
 import (
 	"crud-go/internal/model"
+	"crud-go/internal/model/errors"
 	"crud-go/internal/repository"
 	"fmt"
 )
@@ -25,10 +26,18 @@ type CustomerService struct {
 	ItemRepository   *repository.IItemRepository
 }
 
+// NewCustomerService создаёт новый сервис для выполнения операций покупателя.
+//
+// Принимает интерфейсы репозиториев для хранения заказов, задач, корзины и товаров,
+// возвращает новый экземпляр сервиса.
 func NewCustomerService(or repository.IOrderRepository, tr repository.ITaskRepository, br repository.IBasketRepository, ir repository.IItemRepository) CustomerService {
 	return CustomerService{OrderRepository: &or, TaskRepository: &tr, BasketRepository: &br, ItemRepository: &ir}
 }
 
+// GetOrdersByCustomer служит для получения всех заказов покупателя.
+//
+// Принимает логин и роль покупателя,
+// возвращает список заказов покупателя и возможную ошибку.
 func (cs CustomerService) GetOrdersByCustomer(login string, role int) ([]model.Order, error) {
 	if role != 1 {
 		return nil, fmt.Errorf("You are not authorized for this operation")
@@ -40,8 +49,12 @@ func (cs CustomerService) GetOrdersByCustomer(login string, role int) ([]model.O
 	if orderRepoErr != nil {
 		return nil, fmt.Errorf("Error getting orders by customer login: \n%w", orderRepoErr)
 	}
+	var ordersID []int
+	for _, order := range orders {
+		ordersID = append(ordersID, order.ID)
+	}
 
-	tasks, taskRepoErr := tr.GetAllTasks()
+	tasks, taskRepoErr := tr.GetTasksByContracts(ordersID)
 	if taskRepoErr != nil {
 		return nil, fmt.Errorf("Error getting tasks from TaskRepository: \n%w", taskRepoErr)
 	}
@@ -68,19 +81,27 @@ func (cs CustomerService) GetOrdersByCustomer(login string, role int) ([]model.O
 	return orders, nil
 }
 
-func (cs CustomerService) GetOrderById(login string, role int, id int) (model.Order, error) {
+// GetOrderById служит для получения заказа по его идентификатору.
+//
+// Принимает логин покупателя, его роль и идентификатор заказа,
+// возвращает информацию о заказе и возможную ошибку.
+func (cs CustomerService) GetOrderById(login string, role int, orderId int) (model.Order, error) {
 	if role != 1 {
 		return model.Order{}, fmt.Errorf("You are not authorized for this operation")
 	}
 	or := *(cs.OrderRepository)
 	tr := *(cs.TaskRepository)
 
-	order, orderRepoErr := or.GetOrderById(id)
+	order, orderRepoErr := or.GetOrderById(orderId)
 	if orderRepoErr != nil {
 		return model.Order{}, fmt.Errorf("Error getting order by order ID: \n%w", orderRepoErr)
 	}
+	if order.WorkerLogin != login {
+		return model.Order{},
+			errors.AccessRejectedError{}
+	}
 
-	tasks, taskRepoErr := tr.GetTasksByContract(id)
+	tasks, taskRepoErr := tr.GetTasksByContracts([]int{orderId})
 	if taskRepoErr != nil {
 		return model.Order{}, fmt.Errorf("Error getting tasks by order ID: \n%w", taskRepoErr)
 	}
@@ -101,6 +122,10 @@ func (cs CustomerService) GetOrderById(login string, role int, id int) (model.Or
 	return order, nil
 }
 
+// CreateOrder служит для создания нового заказа покупателя.
+//
+// Принимает логин и роль покупателя, а также данные создаваемого заказа,
+// возвращает идентификатор созданного заказа и возможную ошибку.
 func (cs CustomerService) CreateOrder(login string, role int, orderDTO model.OrderCreationDTO) (int, error) {
 	if role != 1 {
 		return 0, fmt.Errorf("You are not authorized for this operation")
@@ -154,15 +179,27 @@ func (cs CustomerService) CreateOrder(login string, role int, orderDTO model.Ord
 	return createdId, nil
 }
 
-func (cs CustomerService) DeleteOrder(login string, role int, id int) (int, error) {
+// DeleteOrder служит для удаления заказа покупателя.
+//
+// Принимает логин и роль покупателя, а также идентификатор заказа,
+// возвращает стоимость незавершённых задач и возможную ошибку.
+func (cs CustomerService) DeleteOrder(login string, role int, orderId int) (int, error) {
 	if role != 1 {
 		return 0, fmt.Errorf("You are not authorized for this operation")
 	}
 	or := *(cs.OrderRepository)
 	tr := *(cs.TaskRepository)
 
+	order, getErr := or.GetOrderById(orderId)
+	if getErr != nil {
+		return 0, getErr
+	}
+	if order.CustomerLogin != login {
+		return 0, errors.AccessRejectedError{}
+	}
+
 	var priceUnfinished int
-	tasks, taskRepoErr := tr.GetTasksByContract(id)
+	tasks, taskRepoErr := tr.GetTasksByContracts([]int{orderId})
 	if taskRepoErr != nil {
 		return 0, fmt.Errorf("Error getting tasks by order ID: \n%w", taskRepoErr)
 	}
@@ -181,7 +218,7 @@ func (cs CustomerService) DeleteOrder(login string, role int, id int) (int, erro
 			return 0, fmt.Errorf("Error deleting task %s by order ID: \n%w", task.ToString(), taskDeleteErr)
 		}
 	}
-	orderDeleteErr := or.DeleteOrder(id)
+	orderDeleteErr := or.DeleteOrder(orderId)
 	if orderDeleteErr != nil {
 		tx.Rollback()
 		return 0, fmt.Errorf("Error deleting order by ID: \n%w", orderDeleteErr)
@@ -190,6 +227,10 @@ func (cs CustomerService) DeleteOrder(login string, role int, id int) (int, erro
 	return priceUnfinished, nil
 }
 
+// GetItems служит для получения списка товаров.
+//
+// Принимает логин и роль покупателя,
+// возвращает список товаров и возможную ошибку.
 func (cs CustomerService) GetItems(login string, role int) ([]model.Item, error) {
 	if role != 1 {
 		return nil, fmt.Errorf("You are not authorized for this operation")
@@ -204,6 +245,10 @@ func (cs CustomerService) GetItems(login string, role int) ([]model.Item, error)
 	return items, nil
 }
 
+// GetBasket служит для получения корзины покупателя.
+//
+// Принимает логин и роль покупателя,
+// возвращает список товаров в корзине и возможную ошибку.
 func (cs CustomerService) GetBasket(login string, role int) ([]model.TaskCreationDTO, error) {
 	if role != 1 {
 		return nil,
@@ -220,6 +265,10 @@ func (cs CustomerService) GetBasket(login string, role int) ([]model.TaskCreatio
 	return basket, nil
 }
 
+// SaveToBasket служит для добавления товара в корзину покупателя.
+//
+// Принимает логин и роль покупателя, а также данные товара,
+// возвращает возможную ошибку.
 func (cs CustomerService) SaveToBasket(login string, role int, item model.TaskCreationDTO) error {
 	if role != 1 {
 		return fmt.Errorf("You are not authorized for this operation")
@@ -233,6 +282,10 @@ func (cs CustomerService) SaveToBasket(login string, role int, item model.TaskCr
 	return nil
 }
 
+// DeleteFromBasket служит для удаления товара из корзины покупателя.
+//
+// Принимает логин и роль покупателя, а также идентификатор товара,
+// возвращает возможную ошибку.
 func (cs CustomerService) DeleteFromBasket(login string, role int, itemId int) error {
 	if role != 1 {
 		return fmt.Errorf("You are not authorized for this operation")
@@ -247,6 +300,10 @@ func (cs CustomerService) DeleteFromBasket(login string, role int, itemId int) e
 	return nil
 }
 
+// ClearBasket служит для удаления всех товаров из корзины покупателя.
+//
+// Принимает логин и роль покупателя,
+// возвращает возможную ошибку.
 func (cs CustomerService) ClearBasket(login string, role int) error {
 	if role != 1 {
 		return fmt.Errorf("You are not authorized for this operation")

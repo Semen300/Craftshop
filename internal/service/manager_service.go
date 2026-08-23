@@ -2,6 +2,7 @@ package service
 
 import (
 	"crud-go/internal/model"
+	"crud-go/internal/model/errors"
 	"crud-go/internal/repository"
 	"fmt"
 )
@@ -19,10 +20,18 @@ type ManagerService struct {
 	UserRepository  *repository.IUserRepository
 }
 
+// NewManagerService создаёт новый сервис для выполнения операций менеджера.
+//
+// Принимает интерфейсы репозиториев для хранения заказов, задач и пользователей,
+// возвращает новый экземпляр сервиса.
 func NewManagerService(or repository.IOrderRepository, tr repository.ITaskRepository, ur repository.IUserRepository) ManagerService {
 	return ManagerService{OrderRepository: &or, TaskRepository: &tr, UserRepository: &ur}
 }
 
+// GetAllWorkers служит для получения всех рабочих, подчинённых данному менеджеру.
+//
+// Принимает логин и роль менеджера,
+// возвращает список рабочих и возможную ошибку.
 func (ms ManagerService) GetAllWorkers(login string, role int) ([]model.Worker, error) {
 	if role != 3 {
 		return nil,
@@ -40,6 +49,10 @@ func (ms ManagerService) GetAllWorkers(login string, role int) ([]model.Worker, 
 	return workers, nil
 }
 
+// GetAllOrders служит для получения всех заказов, доступных данному менеджеру.
+//
+// Принимает логин и роль менеджера,
+// возвращает список заказов и возможную ошибку.
 func (ms ManagerService) GetAllOrders(login string, role int) ([]model.Order, error) {
 	if role != 3 {
 		return nil, fmt.Errorf("You are not authorized for this operation")
@@ -55,7 +68,15 @@ func (ms ManagerService) GetAllOrders(login string, role int) ([]model.Order, er
 			fmt.Errorf("Error getting orders for manager %s:\n%w", login, ordersErr)
 	}
 
-	tasks, tasksErr := tr.GetAllTasks()
+	var ordersID []int
+	for _, order := range managerOrders {
+		ordersID = append(ordersID, order.ID)
+	}
+	for _, order := range emptyOrders {
+		ordersID = append(ordersID, order.ID)
+	}
+
+	tasks, tasksErr := tr.GetTasksByContracts(ordersID)
 	if tasksErr != nil {
 		return nil,
 			fmt.Errorf("Error getting tasks:\n%w", tasksErr)
@@ -86,6 +107,10 @@ func (ms ManagerService) GetAllOrders(login string, role int) ([]model.Order, er
 	return orders, nil
 }
 
+// GetOrderById служит для получения заказа по его идентификатору.
+//
+// Принимает логин менеджера, его роль и идентификатор заказа,
+// возвращает информацию о заказе и возможную ошибку.
 func (ms ManagerService) GetOrderById(login string, role int, id int) (model.Order, error) {
 	if role != 3 {
 		return model.Order{}, fmt.Errorf("You are not authorized for this operation")
@@ -99,7 +124,12 @@ func (ms ManagerService) GetOrderById(login string, role int, id int) (model.Ord
 		return model.Order{},
 			fmt.Errorf("Error getting order by ID: \n%w", orderErr)
 	}
-	tasks, tasksErr := tr.GetTasksByContract(id)
+	if order.ManagerLogin != login {
+		return model.Order{},
+			errors.AccessRejectedError{}
+	}
+
+	tasks, tasksErr := tr.GetTasksByContracts([]int{id})
 	if tasksErr != nil {
 		return model.Order{},
 			fmt.Errorf("Error getting tasks for order: \n%w", tasksErr)
@@ -121,17 +151,34 @@ func (ms ManagerService) GetOrderById(login string, role int, id int) (model.Ord
 	return order, nil
 }
 
-func (ms ManagerService) AssignWorkerToOrder(login string, role int, id int, workerLogin string) error {
+// AssignWorkerToOrder служит для назначения рабочего на заказ.
+//
+// Принимает логин менеджера, его роль, идентификатор заказа и логин рабочего,
+// возвращает возможную ошибку.
+func (ms ManagerService) AssignWorkerToOrder(login string, role int, orderId int, workerLogin string) error {
 	if role != 3 {
 		return fmt.Errorf("You are not authorized for this operation")
 	}
 
 	or := *ms.OrderRepository
+	ur := *ms.UserRepository
 
-	order, getErr := or.GetOrderById(id)
-	if getErr != nil {
-		return fmt.Errorf("Error getting order by ID: \n%w", getErr)
+	order, orderGetErr := or.GetOrderById(orderId)
+	if orderGetErr != nil {
+		return fmt.Errorf("Error getting order by ID: \n%w", orderGetErr)
 	}
+	if order.ManagerLogin != login {
+		return errors.AccessRejectedError{}
+	}
+
+	worker, workerGetErr := ur.GetWorker(workerLogin)
+	if workerGetErr != nil {
+		return fmt.Errorf("Error getting user by login: \n%w", orderGetErr)
+	}
+	if worker.SuperiorLogin != login {
+		return errors.AccessRejectedError{}
+	}
+
 	order.ManagerLogin = login
 	order.WorkerLogin = workerLogin
 	order.Status = 1
