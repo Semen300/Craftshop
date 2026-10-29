@@ -66,6 +66,16 @@ AUTH_REFRESH_KEY=your_refresh_secret
 go run ./cmd/app
 ```
 
+## Тесты
+
+Тесты запускаются при помощи команды
+
+```bash
+go test ./...
+```
+
+Реализовано покрытие 75% критического функционала Unit- и интеграционными тестами.
+
 ## API
 
 
@@ -89,6 +99,19 @@ go run ./cmd/app
     "password":"1234"
 }
 ```
+*Пример тела ответа:*
+```json
+{
+    {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6InNpbW9uIiwicm9sZSI6MSwiZXhwIjoxNzkzMjc0MjcxfQ.zy_-SzkG6NJfLvHdw70x6gA4vY8ye-T7DCm67Ss3WgQ",
+    "claims": {
+        "login": "simon",
+        "role": 1
+    },
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6InNpbW9uIiwicm9sZSI6MSwiZXhwIjoxNzkzMzU3NjcxLCJqdGkiOiIwZDk5Y2YzOS05NmFiLTRkZDYtOTk2OC02YmU4MDZiNDA1MmMifQ.fypSMo3u4cgB_1SarD6qB6BOkB6hCKtmLw67ZZYooC8"
+}
+}
+```
 
 #### **Обновление access token**
 
@@ -102,6 +125,12 @@ go run ./cmd/app
     "refreshToken":"sdetgdwr.strrtggwr.s32tgso5"
 }
 ```
+*Пример тела ответа:*
+```json
+{
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6InNpbW9uIiwicm9sZSI6MSwiZXhwIjoxNzkzMjc0OTI4LCJqdGkiOiIwZDk5Y2YzOS05NmFiLTRkZDYtOTk2OC02YmU4MDZiNDA1MmMifQ.4BYI_ZkGxkK_CBI3_7DDtZbln76hi_rf_uXloGJ67C0"
+}
+```
 
 #### **Выход из системы**
 
@@ -113,6 +142,12 @@ go run ./cmd/app
 ```json
 {
     "login":"login"
+}
+```
+*Пример тела ответа:*
+```json
+{
+    "message": "Successfully logged out"
 }
 ```
 
@@ -137,6 +172,12 @@ go run ./cmd/app
     "email":"test_mail@gmail.com"
 }
 ``` 
+*Пример тела ответа:*
+```json
+{
+    "message": "Registration successful"
+}
+```
 
 #### **Получение списка заказов**
 
@@ -146,6 +187,44 @@ go run ./cmd/app
 *URL:* `/customer/orders`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+[
+    [
+    {
+        "ID": 1,
+        "Name": "Заказ для пользователя simon до 01.04.2030 на сумму 5.0",
+        "Deadline": "2030-04-01T00:00:00Z",
+        "ManagerLogin": "",
+        "WorkerLogin": "",
+        "CustomerLogin": "simon",
+        "PercentOfComplition": 0,
+        "PriceTotal": 500,
+        "PriceUnfinished": 500,
+        "Status": 0,
+        "Tasks": [
+            {
+                "ID": 1,
+                "Name": "Задача: изготовление Item1 до 01.04.2030",
+                "OrderID": 1,
+                "ItemID": 1,
+                "Amount": 1,
+                "Finished": false,
+                "Price": 100
+            },
+            {
+                "ID": 2,
+                "Name": "Задача: изготовление Item2 до 01.04.2030",
+                "OrderID": 1,
+                "ItemID": 2,
+                "Amount": 2,
+                "Finished": false,
+                "Price": 400
+            }
+        ]
+    }
+]
+```
 
 
 #### **Получение информации о заказе**
@@ -156,6 +235,41 @@ go run ./cmd/app
 *URL:* `/customer/orders/{id}`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+{
+    "ID": 1,
+    "Name": "Заказ для пользователя simon до 01.04.2030 на сумму 5.0",
+    "Deadline": "2030-04-01T00:00:00Z",
+    "ManagerLogin": "",
+    "WorkerLogin": "",
+    "CustomerLogin": "simon",
+    "PercentOfComplition": 0,
+    "PriceTotal": 500,
+    "PriceUnfinished": 500,
+    "Status": 0,
+    "Tasks": [
+        {
+            "ID": 1,
+            "Name": "Задача: изготовление Item1 до 01.04.2030",
+            "OrderID": 1,
+            "ItemID": 1,
+            "Amount": 1,
+            "Finished": false,
+            "Price": 100
+        },
+        {
+            "ID": 2,
+            "Name": "Задача: изготовление Item2 до 01.04.2030",
+            "OrderID": 1,
+            "ItemID": 2,
+            "Amount": 2,
+            "Finished": false,
+            "Price": 400
+        }
+    ]
+}
+```
 
 #### **Создание нового заказа**
 
@@ -184,6 +298,7 @@ go run ./cmd/app
 }
 ``` 
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Запрос не возвращает тело ответа*
 
 #### **Удаление заказа**
 
@@ -193,6 +308,7 @@ go run ./cmd/app
 *URL:* `/customer/orders/{id}`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Запрос не возвращает тело ответа*
 
 #### **Получение списка товаров**
 
@@ -202,6 +318,21 @@ go run ./cmd/app
 *URL:* `/customer/items`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+[
+    {
+        "ID": 1,
+        "Name": "Item1",
+        "Price": 100
+    },
+    {
+        "ID": 2,
+        "Name": "Item2",
+        "Price": 200
+    }
+]
+```
 
 #### **Получение корзины**
 
@@ -211,6 +342,17 @@ go run ./cmd/app
 *URL:* `/customer/basket`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+[
+    {
+        "itemId": 1,
+        "name": "Item1",
+        "itemPrice": 1000,
+        "amount": 20
+    }
+]
+```
 
 #### **Добавление товара в корзину**
 
@@ -228,6 +370,7 @@ go run ./cmd/app
 }
 ```
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Запрос не возвращает тело ответа*
 
 #### **Удаление товара из корзины**
 
@@ -237,6 +380,7 @@ go run ./cmd/app
 *URL:* `/customer/basket/{id}`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Запрос не возвращает тело ответа*
 
 
 ### Функционал работника
@@ -251,6 +395,43 @@ go run ./cmd/app
 *URL:* `/worker/orders`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+[
+    {
+        "ID": 4,
+        "Name": "Заказ для пользователя simon до 01.04.2030 на сумму 5.0",
+        "Deadline": "2030-04-01T00:00:00Z",
+        "ManagerLogin": "manager1",
+        "WorkerLogin": "worker1",
+        "CustomerLogin": "simon",
+        "PercentOfComplition": 0,
+        "PriceTotal": 500,
+        "PriceUnfinished": 500,
+        "Status": 1,
+        "Tasks": [
+            {
+                "ID": 7,
+                "Name": "Задача: изготовление Item1 до 01.04.2030",
+                "OrderID": 4,
+                "ItemID": 1,
+                "Amount": 1,
+                "Finished": false,
+                "Price": 100
+            },
+            {
+                "ID": 8,
+                "Name": "Задача: изготовление Item2 до 01.04.2030",
+                "OrderID": 4,
+                "ItemID": 2,
+                "Amount": 2,
+                "Finished": false,
+                "Price": 400
+            }
+        ]
+    }
+]
+```
 
 #### **Просмотр заказа рабочего по его ID**
 
@@ -260,6 +441,41 @@ go run ./cmd/app
 *URL:* `/worker/orders/{id}`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+{
+    "ID": 4,
+    "Name": "Заказ для пользователя simon до 01.04.2030 на сумму 5.0",
+    "Deadline": "2030-04-01T00:00:00Z",
+    "ManagerLogin": "manager1",
+    "WorkerLogin": "worker1",
+    "CustomerLogin": "simon",
+    "PercentOfComplition": 0,
+    "PriceTotal": 500,
+    "PriceUnfinished": 500,
+    "Status": 1,
+    "Tasks": [
+        {
+            "ID": 7,
+            "Name": "Задача: изготовление Item1 до 01.04.2030",
+            "OrderID": 4,
+            "ItemID": 1,
+            "Amount": 1,
+            "Finished": false,
+            "Price": 100
+        },
+        {
+            "ID": 8,
+            "Name": "Задача: изготовление Item2 до 01.04.2030",
+            "OrderID": 4,
+            "ItemID": 2,
+            "Amount": 2,
+            "Finished": false,
+            "Price": 400
+        }
+    ]
+}
+```
 
 #### **Отметка о выполнении задачи**
 
@@ -269,6 +485,7 @@ go run ./cmd/app
 *URL:* `/worker/tasks/{id}`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Запрос не возвращает тело ответа*
 
 
 ### Функционал менеджера
@@ -283,6 +500,75 @@ go run ./cmd/app
 *URL:* `/manager/orders`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+[
+    {
+        "ID": 2,
+        "Name": "Заказ для пользователя simon до 01.04.2030 на сумму 5.0",
+        "Deadline": "2030-04-01T00:00:00Z",
+        "ManagerLogin": "",
+        "WorkerLogin": "",
+        "CustomerLogin": "simon",
+        "PercentOfComplition": 0,
+        "PriceTotal": 500,
+        "PriceUnfinished": 500,
+        "Status": 0,
+        "Tasks": [
+            {
+                "ID": 3,
+                "Name": "Задача: изготовление Item1 до 01.04.2030",
+                "OrderID": 2,
+                "ItemID": 1,
+                "Amount": 1,
+                "Finished": false,
+                "Price": 100
+            },
+            {
+                "ID": 4,
+                "Name": "Задача: изготовление Item2 до 01.04.2030",
+                "OrderID": 2,
+                "ItemID": 2,
+                "Amount": 2,
+                "Finished": false,
+                "Price": 400
+            }
+        ]
+    },
+    {
+        "ID": 3,
+        "Name": "Заказ для пользователя simon до 01.04.2030 на сумму 5.0",
+        "Deadline": "2030-04-01T00:00:00Z",
+        "ManagerLogin": "",
+        "WorkerLogin": "",
+        "CustomerLogin": "simon",
+        "PercentOfComplition": 0,
+        "PriceTotal": 500,
+        "PriceUnfinished": 500,
+        "Status": 0,
+        "Tasks": [
+            {
+                "ID": 5,
+                "Name": "Задача: изготовление Item1 до 01.04.2030",
+                "OrderID": 3,
+                "ItemID": 1,
+                "Amount": 1,
+                "Finished": false,
+                "Price": 100
+            },
+            {
+                "ID": 6,
+                "Name": "Задача: изготовление Item2 до 01.04.2030",
+                "OrderID": 3,
+                "ItemID": 2,
+                "Amount": 2,
+                "Finished": false,
+                "Price": 400
+            }
+        ]
+    }
+]
+```
 
 #### **Получение заказа по его ID**
 
@@ -292,6 +578,41 @@ go run ./cmd/app
 *URL:* `/manager/orders/{id}`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Пример тела ответа:*
+```json
+{
+    "ID": 3,
+    "Name": "Заказ для пользователя simon до 01.04.2030 на сумму 5.0",
+    "Deadline": "2030-04-01T00:00:00Z",
+    "ManagerLogin": "",
+    "WorkerLogin": "",
+    "CustomerLogin": "simon",
+    "PercentOfComplition": 0,
+    "PriceTotal": 500,
+    "PriceUnfinished": 500,
+    "Status": 0,
+    "Tasks": [
+        {
+            "ID": 5,
+            "Name": "Задача: изготовление Item1 до 01.04.2030",
+            "OrderID": 3,
+            "ItemID": 1,
+            "Amount": 1,
+            "Finished": false,
+            "Price": 100
+        },
+        {
+            "ID": 6,
+            "Name": "Задача: изготовление Item2 до 01.04.2030",
+            "OrderID": 3,
+            "ItemID": 2,
+            "Amount": 2,
+            "Finished": false,
+            "Price": 400
+        }
+    ]
+}
+```
 
 #### **Назначение работника на заказ**
 
@@ -306,6 +627,7 @@ go run ./cmd/app
 }
 ```
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
+*Запрос не возвращает тело ответа*
 
 #### **Получение списка рабочих**
 
@@ -315,15 +637,14 @@ go run ./cmd/app
 *URL:* `/manager/workers`  
 *Запрос выполняется с пустым телом*  
 *Обязательные заголовки запроса:* `Autorization: Bearer <access token>`
-
-
-
-## Тесты
-
-Тесты запускаются при помощи команды
-
-```bash
-go test ./...
+*Пример тела ответа:*
+```json
+[
+    {
+        "Login": "worker1",
+        "Password": "sduiwk21fs",
+        "Fio": "Worker",
+        "SuperiorLogin": "manager1"
+    }
+]
 ```
-
-Реализовано покрытие 75% критического функционала Unit- и интеграционными тестами.
