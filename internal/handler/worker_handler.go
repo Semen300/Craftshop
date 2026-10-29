@@ -47,7 +47,7 @@ func (wh WorkerHandler) GetOrder(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Incorrect user claims"})
 		return
 	}
-	orderID, paramErr := strconv.Atoi(ctx.Param("orderId"))
+	orderID, paramErr := strconv.Atoi(ctx.Param("id"))
 	if paramErr != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
 		return
@@ -80,7 +80,7 @@ func (wh WorkerHandler) SetTaskCompleted(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Incorrect user claims"})
 		return
 	}
-	taskID, paramErr := strconv.Atoi(ctx.Param("taskId"))
+	taskID, paramErr := strconv.Atoi(ctx.Param("id"))
 	if paramErr != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
 		return

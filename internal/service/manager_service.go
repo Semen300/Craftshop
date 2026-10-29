@@ -124,7 +124,7 @@ func (ms ManagerService) GetOrderById(login string, role int, id int) (model.Ord
 		return model.Order{},
 			fmt.Errorf("Error getting order by ID: \n%w", orderErr)
 	}
-	if order.ManagerLogin != login {
+	if order.ManagerLogin != login && order.ManagerLogin != "" {
 		return model.Order{},
 			errors.AccessRejectedError{}
 	}
@@ -167,7 +167,7 @@ func (ms ManagerService) AssignWorkerToOrder(login string, role int, orderId int
 	if orderGetErr != nil {
 		return fmt.Errorf("Error getting order by ID: \n%w", orderGetErr)
 	}
-	if order.ManagerLogin != login {
+	if order.ManagerLogin != login && order.ManagerLogin != "" {
 		return errors.AccessRejectedError{}
 	}
 

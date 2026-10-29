@@ -154,7 +154,7 @@ func (u UserRepository) GetRoleByLogin(login string) (int, string, error) {
 func (u UserRepository) GetWorker(workerLogin string) (model.Worker, error) {
 	query := `SELECT * 
 	FROM workers
-	WHERE id = $1`
+	WHERE login = $1`
 
 	var worker model.Worker
 	queryErr := u.Conn.QueryRow(query, workerLogin).Scan(&worker.Login, &worker.Password, &worker.Fio, &worker.SuperiorLogin)
